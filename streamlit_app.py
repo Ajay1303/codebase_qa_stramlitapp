@@ -243,9 +243,7 @@ def answer_question(query: str, vectorstore, groq_api_key: str) -> dict:
 
     # Retrieve docs first so we can return sources
     retrieved_docs = retriever.invoke(query)
-    context = "
-
-".join(doc.page_content for doc in retrieved_docs)
+    context = "".join(doc.page_content for doc in retrieved_docs)
 
     chain = prompt | llm | StrOutputParser()
     answer = chain.invoke({"context": context, "question": query})
