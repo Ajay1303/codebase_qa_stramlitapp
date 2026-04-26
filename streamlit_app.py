@@ -224,36 +224,38 @@ def build_vectorstore(chunks, embeddings):
 def answer_question(query: str, vectorstore, groq_api_key: str) -> dict:
     """Run the full RAG pipeline and return answer + source files."""
     from langchain_groq import ChatGroq
-    from langchain.chains import RetrievalQA
-    from langchain_core.prompts import PromptTemplate
+    from langchain_core.prompts import ChatPromptTemplate
+    from langchain_core.output_parsers import StrOutputParser
 
-    prompt = PromptTemplate(
-        template=PROMPT_TEMPLATE,
-        input_variables=["context", "question"],
-    )
     llm = ChatGroq(
         model_name="llama3-70b-8192",
         temperature=0,
         groq_api_key=groq_api_key,
         max_tokens=1024,
     )
+
     retriever = vectorstore.as_retriever(
         search_type="similarity",
         search_kwargs={"k": TOP_K},
     )
-    qa_chain = RetrievalQA.from_chain_type(
-        llm=llm,
-        chain_type="stuff",
-        retriever=retriever,
-        return_source_documents=True,
-        chain_type_kwargs={"prompt": prompt},
-    )
-    result = qa_chain.invoke({"query": query})
+
+    prompt = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
+
+    # Retrieve docs first so we can return sources
+    retrieved_docs = retriever.invoke(query)
+    context = "
+
+".join(doc.page_content for doc in retrieved_docs)
+
+    chain = prompt | llm | StrOutputParser()
+    answer = chain.invoke({"context": context, "question": query})
+
     sources = list({
         doc.metadata.get("filepath", "unknown")
-        for doc in result.get("source_documents", [])
+        for doc in retrieved_docs
     })
-    return {"answer": result["result"], "sources": sources}
+
+    return {"answer": answer, "sources": sources}
 
 
 # ══════════════════════════════════════════════════════════════════════════════
