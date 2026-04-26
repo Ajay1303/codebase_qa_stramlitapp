@@ -136,7 +136,7 @@ input[type="text"] {
 
 def _load_code_files(base_path: Path, repo_name: str):
     """Recursively read all valid code files from a cloned repo."""
-    from langchain.schema import Document
+    from langchain_core.documents import Document
 
     documents = []
     for file_path in base_path.rglob("*"):
@@ -191,7 +191,7 @@ def clone_and_load(repo_url: str):
 
 def chunk_documents(documents):
     """Split documents into overlapping chunks for embedding."""
-    from langchain.text_splitter import RecursiveCharacterTextSplitter
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
 
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=CHUNK_SIZE,
@@ -225,7 +225,7 @@ def answer_question(query: str, vectorstore, groq_api_key: str) -> dict:
     """Run the full RAG pipeline and return answer + source files."""
     from langchain_groq import ChatGroq
     from langchain.chains import RetrievalQA
-    from langchain.prompts import PromptTemplate
+    from langchain_core.prompts import PromptTemplate
 
     prompt = PromptTemplate(
         template=PROMPT_TEMPLATE,
